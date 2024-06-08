@@ -1,0 +1,23 @@
+INFO:maestras:Iniciando cargue maestras
+INFO:clientes:Iniciando cargue clientes
+INFO:items:Iniciando cargue items
+INFO:datosLloreda:Iniciando cargue datos lloreda
+INFO:factExistencialInventario:Iniciando cargue fact existencial inventario
+INFO:nomina:Iniciando cargue nomina
+INFO:__main__:Iniciando cargue fact existencial inventario
+INFO:__main__:Iniciando cargue datos lloreda
+ERROR:utils.database_manager:Connection link failed, trying again 0 - 3
+ERROR:utils.database_manager:Connection link failed, trying again 1 - 3
+ERROR:utils.database_manager:Connection link failed, trying again 2 - 3
+ERROR:utils.database_manager:Connection link failed, trying again 0 - 3
+ERROR:utils.database_manager:Connection link failed, trying again 1 - 3
+ERROR:utils.database_manager:Connection link failed, trying again 2 - 3
+ERROR:utils.database_manager:Connection link failed, trying again 0 - 3
+ERROR:utils.database_manager:Connection link failed, trying again 1 - 3
+ERROR:utils.database_manager:Connection link failed, trying again 2 - 3
+ERROR:utils.database_manager:Connection link failed, trying again 0 - 3
+ERROR:utils.database_manager:Connection link failed, trying again 1 - 3
+ERROR:utils.database_manager:Connection link failed, trying again 2 - 3
+2024-06-08 11:17:04,918 Iniciando cargue clientes
+2024-06-08 11:17:58,559 Iniciando cargue clientes
+2024-06-08 11:20:02,390 INFO [clientes.py:ejecutar_clientes] Iniciando cargue clientes

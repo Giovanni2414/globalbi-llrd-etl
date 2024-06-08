@@ -2,9 +2,9 @@ import json
 import pandas as pd
 from datetime import datetime
 from utils.database_manager import DatabaseManager
-import warnings
+import logging
 
-def cargue_criterio_items(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_criterio_items(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando criterio items")
     query = """
         SELECT CONVERT(INT,P.f105_id_cia) IdCompania,
@@ -49,33 +49,33 @@ def cargue_criterio_items(lloreda_manager: DatabaseManager, siesa_manager: Datab
     try:
         lloreda_manager.execute_bulk_insert(query, df[['IdCompania', 'CodPlanItem', 'PlanItem', 'CodCriterio', 'Criterio', 'FecCreacion', 'FecModificacion']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue criterio items: ", e)
+        logger.error(f"Error metodo cargue criterio items: {e}")
 
-def limpiar_tabla_items_precios(manager: DatabaseManager):
+def limpiar_tabla_items_precios(manager: DatabaseManager, logger: logging.Logger):
     print("Limpiando tabla items precios")
     try:
         query = 'TRUNCATE TABLE siesa.tbItemsPrecios'
         manager.execute_query_no_results(query)
     except Exception as e:
-        print("Error metodo Limpiar Tabla items precios: ", e)
+        logger.error(f"Error metodo Limpiar Tabla items precios: {e}")
 
-def limpiar_tabla_politicas_items(manager: DatabaseManager):
+def limpiar_tabla_politicas_items(manager: DatabaseManager, logger: logging.Logger):
     print("Limpiando tabla politicas items")
     try:
         query = 'TRUNCATE TABLE siesa.tbItemsPoliticas'
         manager.execute_query_no_results(query)
     except Exception as e:
-        print("Error metodo Limpiar Tabla politicas items: ", e)
+        logger.error(f"Error metodo Limpiar Tabla politicas items: {e}")
 
-def limpiar_tabla_rel_criterio_items(manager: DatabaseManager):
+def limpiar_tabla_rel_criterio_items(manager: DatabaseManager, logger: logging.Logger):
     print("Limpiando tabla rel criterio items")
     try:
         query = 'TRUNCATE TABLE siesa.tbRelCriterioItems'
         manager.execute_query_no_results(query)
     except Exception as e:
-        print("Error metodo Limpiar Tabla rel criterio items: ", e)
+        logger.error(f"Error metodo Limpiar Tabla rel criterio items: {e}")
 
-def cargue_items(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_items(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando items")
     query = """
         SELECT T120.f120_rowid IdItem,
@@ -172,9 +172,9 @@ def cargue_items(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManage
     try:
         lloreda_manager.execute_bulk_insert(query, df[['IdItem', 'IdCompania', 'CodItem', 'Referencia', 'Item', 'DescripcionCorta', 'CodTipoItemServicio', 'TipoItemServicio', 'Ntipoitemind', 'UnidadInventario', 'PesoNeto', 'PesoProd', 'FecCreacion', 'FecModificacion', 'UnidadEmpaque', 'PesoBrutoEmpaque', 'PesoEmpaque', 'UnidadCompra', 'FactorCompra']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue items: ", e)
+        logger.error(f"Error metodo cargue items: {e}")
 
-def cargue_rel_criterio_items(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_rel_criterio_items(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando rel criterio items")
     query = """
         SELECT CONVERT(INT,f125_id_cia) IdCia,
@@ -214,9 +214,9 @@ def cargue_rel_criterio_items(lloreda_manager: DatabaseManager, siesa_manager: D
     try:
         lloreda_manager.execute_bulk_insert(query, merged_df[['IdCriterioItem', 'IdItem', 'FecCreacion', 'FecModificacion']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue rel criterio items: ", e)
+        logger.error(f"Error metodo cargue rel criterio items: {e}")
 
-def cargue_politicas(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_politicas(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando politicas")
     query = """
         SELECT f120_rowid IdItem,
@@ -284,9 +284,9 @@ def cargue_politicas(lloreda_manager: DatabaseManager, siesa_manager: DatabaseMa
                                                        'id_sucursal_prov_1','rowid_tercero_prov_2','id_sucursal_prov_2',
                                                        'ind_tipo_orden','tasa_produccion_hora']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue politicas: ", e)
+        logger.error(f"Error metodo cargue politicas: {e}")
 
-def cargue_items_precios(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_items_precios(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando items precios")
     query = """
         WITH ULTFEC AS
@@ -337,9 +337,9 @@ def cargue_items_precios(lloreda_manager: DatabaseManager, siesa_manager: Databa
         lloreda_manager.execute_bulk_insert(query, df[['FecCreacion','FecModificacion','IdCompania','IdItem','Referencia',
                                                        'PrecioUnitario','CentroOperacion','Moneda','IdInstalacion']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue items precios: ", e)
+        logger.error(f"Error metodo cargue items precios: {e}")
 
-def cargue_centros_trabajo(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_centros_trabajo(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando centros trabajo")
     query = """
         SELECT T806.f806_id_cia IdCia,
@@ -419,17 +419,17 @@ def cargue_centros_trabajo(lloreda_manager: DatabaseManager, siesa_manager: Data
     try:
         lloreda_manager.execute_bulk_insert(query, df[['ID_CENTRO_TRABAJO', 'IdCompania', 'IdInstalacion', 'COD_CENTRO_TRABAJO', 'CENTRO_TRABAJO', 'CENTRO_TRABAJO_CORTO', 'num_turnos', 'HorasxTurno', 'factor_velocidad_maquinas', 'velocidad_estandar', 'rendimiento_medio', 'IdCentroCosto', 'indcargacapacidad', 'nummaquinas', 'porccargadeseada', 'indcritico', 'indcalendarioplanta', 'row_ID_CENTRO_TRABAJO', 'FecCreacion', 'FecModificacion']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue centros trabajo: ", e)
+        logger.error(f"Error metodo cargue centros trabajo: {e}")
 
-def limpiar_tabla_segmentos_costos(manager: DatabaseManager):
+def limpiar_tabla_segmentos_costos(manager: DatabaseManager, logger: logging.Logger):
     print("Limpiando tabla segmentos costos")
     try:
         query = 'TRUNCATE TABLE siesa.tbSegmentoCostos'
         manager.execute_query_no_results(query)
     except Exception as e:
-        print("Error metodo Limpiar Tabla segmentos costos: ", e)
+        logger.error(f"Error metodo Limpiar Tabla segmentos costos: {e}")
 
-def cargue_segmentos_costos(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_segmentos_costos(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando segmentos costos")
     query = """
         SELECT [f804_id_cia] idcia ,
@@ -457,10 +457,10 @@ def cargue_segmentos_costos(lloreda_manager: DatabaseManager, siesa_manager: Dat
         lloreda_manager.execute_bulk_insert(query, df[['FecCreacion','FecModificacion','idcia','idcentrotrabajo',
                                                        'idsegmentocosto','segmentocosto','segmentocostocorto','indtipocosto']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue segmentos costos: ", e)
+        logger.error(f"Error metodo cargue segmentos costos: {e}")
         lloreda_manager.rollback_transaction()
 
-def cargue_rutas(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_rutas(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando rutas")
     query = """
         SELECT r.f808_id_cia idcia,
@@ -557,17 +557,17 @@ def cargue_rutas(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManage
     try:
         lloreda_manager.execute_bulk_insert(query, df[['IdCompania', 'idinstalacion', 'idruta', 'IdCentroTrabajo', 'Coddruta', 'ruta', 'indestadoruta', 'rutaoperacion', 'indestadooperacion', 'cantidadbase', 'horasejecucion', 'horasalistamiento', 'horasmaquina', 'horascola', 'horastraslado', 'numerooperarios', 'operariosalistamiento', 'unidadesequivalentes', 'idmetodo', 'FecCreacion', 'FecModificacion']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue rutas: ", e)
+        logger.error(f"Error metodo cargue rutas: {e}")
 
-def limpiar_tabla_lista_materiales(manager: DatabaseManager):
+def limpiar_tabla_lista_materiales(manager: DatabaseManager, logger: logging.Logger):
     print("Limpiando tabla lista materiales")
     try:
         query = 'TRUNCATE TABLE siesa.tbListaMateriales'
         manager.execute_query_no_results(query)
     except Exception as e:
-        print("Error metodo Limpiar Tabla lista materiales: ", e)
+        logger.error(f"Error metodo Limpiar Tabla lista materiales: {e}")
 
-def cargue_lista_materiales(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_lista_materiales(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando lista materiales")
     query = """
             SELECT lm.f820_id_cia AS Id_cia,
@@ -621,17 +621,17 @@ def cargue_lista_materiales(lloreda_manager: DatabaseManager, siesa_manager: Dat
                                                        'IdRutaOperacion','GrupoConsumo','CodigoUso','PorcCostoProducto',
                                                        'f820_fecha_activacion','f820_fecha_inactivacion']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue lista materiales: ", e)
+        logger.error(f"Error metodo cargue lista materiales: {e}")
 
-def limpiar_tabla_rel_rutas_item(manager: DatabaseManager):
+def limpiar_tabla_rel_rutas_item(manager: DatabaseManager, logger: logging.Logger):
     print("Limpiando tabla rel rutas item")
     try:
         query = 'TRUNCATE TABLE siesa.tbRelRutasItem'
         manager.execute_query_no_results(query)
     except Exception as e:
-        print("Error metodo Limpiar Tabla rel rutas item: ", e)
+        logger.error(f"Error metodo Limpiar Tabla rel rutas item: {e}")
 
-def cargue_rel_rutas_items(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_rel_rutas_items(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando rel rutas items")
     query = """
         SELECT t121.f121_id_cia IdCia,
@@ -656,40 +656,45 @@ def cargue_rel_rutas_items(lloreda_manager: DatabaseManager, siesa_manager: Data
     try:
         lloreda_manager.execute_bulk_insert(query, df[['IdItemExt','IdItem','IdRuta','FecCreacion','FecModificacion']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue rel rutas items: ", e)
+        logger.error(f"Error metodo cargue rel rutas items: {e}")
 
-if __name__ == "__main__":
+def ejecutar_items():
+    logger = logging.getLogger(__name__)
+    logging.basicConfig(filename='errors.log', encoding='utf-8', level=logging.DEBUG, format='%(asctime)s %(levelname)s [%(filename)s:%(funcName)s] %(message)s')
+    logger.info('Iniciando cargue items')
     with open('../config/database_credentials.json') as f:
         config_file = json.load(f)
-    database_name = 'lloreda'
+    database_name = 'destino'
     lloreda_manager = DatabaseManager(config_file, database_name, use_pooling=False)
     lloreda_manager.connect()
 
     with open('../config/database_credentials.json') as f:
         config_file = json.load(f)
-    database_name = 'siesa'
+    database_name = 'origen'
     siesa_manager = DatabaseManager(config_file, database_name, use_pooling=False)
     siesa_manager.connect()
-    warnings.simplefilter(action='ignore', category=FutureWarning)
 
     # Operaciones principales
-    #cargue_criterio_items(lloreda_manager, siesa_manager)
-    #cargue_items(lloreda_manager, siesa_manager)
-    #limpiar_tabla_rel_criterio_items(lloreda_manager)
-    #cargue_rel_criterio_items(lloreda_manager, siesa_manager)
-    #limpiar_tabla_politicas_items(lloreda_manager)
-    #cargue_politicas(lloreda_manager, siesa_manager)
-    #limpiar_tabla_items_precios(lloreda_manager)
-    #cargue_items_precios(lloreda_manager, siesa_manager)
-    #cargue_centros_trabajo(lloreda_manager, siesa_manager)
-    #limpiar_tabla_segmentos_costos(lloreda_manager)
-    #cargue_segmentos_costos(lloreda_manager, siesa_manager)
-    #cargue_rutas(lloreda_manager, siesa_manager)
-    #limpiar_tabla_lista_materiales(lloreda_manager)
-    #cargue_lista_materiales(lloreda_manager, siesa_manager)
-    #limpiar_tabla_rel_rutas_item(lloreda_manager)
-    #cargue_rel_rutas_items(lloreda_manager, siesa_manager)
+    cargue_criterio_items(lloreda_manager, siesa_manager, logger)
+    cargue_items(lloreda_manager, siesa_manager, logger)
+    limpiar_tabla_rel_criterio_items(lloreda_manager, logger)
+    cargue_rel_criterio_items(lloreda_manager, siesa_manager, logger)
+    limpiar_tabla_politicas_items(lloreda_manager, logger)
+    cargue_politicas(lloreda_manager, siesa_manager, logger)
+    limpiar_tabla_items_precios(lloreda_manager, logger)
+    cargue_items_precios(lloreda_manager, siesa_manager, logger)
+    cargue_centros_trabajo(lloreda_manager, siesa_manager, logger)
+    limpiar_tabla_segmentos_costos(lloreda_manager, logger)
+    cargue_segmentos_costos(lloreda_manager, siesa_manager, logger)
+    cargue_rutas(lloreda_manager, siesa_manager, logger)
+    limpiar_tabla_lista_materiales(lloreda_manager, logger)
+    cargue_lista_materiales(lloreda_manager, siesa_manager, logger)
+    limpiar_tabla_rel_rutas_item(lloreda_manager, logger)
+    cargue_rel_rutas_items(lloreda_manager, siesa_manager, logger)
     ############################
 
     lloreda_manager.disconnect()
     siesa_manager.disconnect()
+
+if __name__ == "__main__":
+    ejecutar_items()

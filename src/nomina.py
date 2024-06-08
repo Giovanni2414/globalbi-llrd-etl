@@ -2,16 +2,17 @@ import json
 import pandas as pd
 from datetime import datetime
 from utils.database_manager import DatabaseManager
+import logging
 
-def limpiar_tabla_causacion(manager: DatabaseManager):
+def limpiar_tabla_causacion(manager: DatabaseManager, logger: logging.Logger):
     print("Limpiando tabla causación")
     try:
         query = 'TRUNCATE TABLE siesa.tbCausacionNomina'
         manager.execute_query_no_results(query)
     except Exception as e:
-        print("Error metodo LimpiarTablaCausación: ", e)
+        logger.error(f"Error metodo LimpiarTablaCausación: {e}")
 
-def cargue_grupo_causacion_1(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_grupo_causacion_1(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando grupo causación 1")
     query = """
         SELECT c0590_id_cia CIA ,
@@ -73,9 +74,9 @@ def cargue_grupo_causacion_1(lloreda_manager: DatabaseManager, siesa_manager: Da
     try:
         lloreda_manager.execute_bulk_insert(query, result.values.tolist())
     except Exception as e:
-        print("Error metodo cargue  grupo causacion 1: ", e)
+        logger.error(f"Error metodo cargue grupo causacion 1: {e}")
 
-def cargue_grupo_causacion_2(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_grupo_causacion_2(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando grupo causación 2")
     query = """
         SELECT c0591_id_cia IDCIA ,
@@ -162,9 +163,9 @@ def cargue_grupo_causacion_2(lloreda_manager: DatabaseManager, siesa_manager: Da
     try:
         lloreda_manager.execute_bulk_insert(query, result.values.tolist())
     except Exception as e:
-        print("Error metodo cargue  grupo causacion 2: ", e)
+        logger.error(f"Error metodo cargue  grupo causacion 2: {e}")
 
-def cargue_grupo_causacion_3(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_grupo_causacion_3(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando grupo causación 3")
     query = """
         SELECT c0592_id_cia IDCIA ,
@@ -252,9 +253,9 @@ def cargue_grupo_causacion_3(lloreda_manager: DatabaseManager, siesa_manager: Da
     try:
         lloreda_manager.execute_bulk_insert(query, result.values.tolist())
     except Exception as e:
-        print("Error metodo cargue  grupo causacion 3: ", e)
+        logger.error(f"Error metodo cargue  grupo causacion 3: {e}")
 
-def cargue_grupo_empleados(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_grupo_empleados(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando grupos empleados")
     query = """
         SELECT a.c0510_id_cia idcompania,
@@ -310,28 +311,35 @@ def cargue_grupo_empleados(lloreda_manager: DatabaseManager, siesa_manager: Data
                                                        'grupoempleados','codconceptosueldo','codconceptofestivo',
                                                        'codconceptodominical','FecCreacion','FecModificacion']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue  grupo causacion 3: ", e)
+        logger.error(f"Error metodo cargue  grupo causacion 3: {e}")
 
-if __name__ == "__main__":
+def ejecutar_nomina():
+    logger = logging.getLogger(__name__)
+    logging.basicConfig(filename='errors.log', encoding='utf-8', level=logging.DEBUG, format='%(asctime)s %(levelname)s [%(filename)s:%(funcName)s] %(message)s')
+    logger.info('Iniciando cargue nomina')
+
     with open('../config/database_credentials.json') as f:
         config_file = json.load(f)
-    database_name = 'lloreda'
+    database_name = 'destino'
     lloreda_manager = DatabaseManager(config_file, database_name, use_pooling=False)
     lloreda_manager.connect()
 
     with open('../config/database_credentials.json') as f:
         config_file = json.load(f)
-    database_name = 'siesa'
+    database_name = 'origen'
     siesa_manager = DatabaseManager(config_file, database_name, use_pooling=False)
     siesa_manager.connect()
 
     # Operaciones principales
-    limpiar_tabla_causacion(lloreda_manager)
-    cargue_grupo_causacion_1(lloreda_manager, siesa_manager)
-    cargue_grupo_causacion_2(lloreda_manager, siesa_manager)
-    cargue_grupo_causacion_3(lloreda_manager, siesa_manager)
-    cargue_grupo_empleados(lloreda_manager, siesa_manager)
+    limpiar_tabla_causacion(lloreda_manager, logger)
+    cargue_grupo_causacion_1(lloreda_manager, siesa_manager, logger)
+    cargue_grupo_causacion_2(lloreda_manager, siesa_manager, logger)
+    cargue_grupo_causacion_3(lloreda_manager, siesa_manager, logger)
+    cargue_grupo_empleados(lloreda_manager, siesa_manager, logger)
     ############################
 
     lloreda_manager.disconnect()
     siesa_manager.disconnect()
+
+if __name__ == "__main__":
+    ejecutar_nomina()

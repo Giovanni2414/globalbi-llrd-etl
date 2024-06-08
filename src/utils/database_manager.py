@@ -1,5 +1,8 @@
 import pyodbc
 import pandas as pd
+import warnings
+import time
+import logging
 
 class DatabaseManager:
 
@@ -8,6 +11,8 @@ class DatabaseManager:
         self.database_name = database_name
         self.driver = driver
         self.use_pooling = use_pooling
+        self.logger = logging.getLogger(__name__)
+        logging.basicConfig(filename='errors.log', encoding='utf-8', level=logging.DEBUG, format='%(asctime)s %(message)s')
 
         self.connection = None
 
@@ -86,6 +91,7 @@ class DatabaseManager:
         if not self.connection:
             raise Exception("Connection is not established. Call connect() method first.")
 
+        warnings.filterwarnings("ignore", category=UserWarning)
         data = pd.read_sql_query(query, self.connection)
         return data
     
@@ -109,9 +115,25 @@ class DatabaseManager:
 
         cursor = self.connection.cursor()
 
+        retries = 10
+        delay = 5
+        attempt = 0
         try:
             cursor.fast_executemany = True
-            cursor.executemany(base_query, dataset)
+            while attempt < retries:
+                try:
+                    cursor.executemany(base_query, dataset)
+                    attempt = retries
+                except pyodbc.Error as ex:
+                    self.logger.error(f"Connection link failed, trying again {str(attempt)} - {str(retries)}")
+                    self.connect()
+                    cursor = self.connection.cursor()
+                    cursor.fast_executemany = True
+                    attempt += 1
+                    if(attempt == retries):
+                        self.logger.error("Se superó el límite de intentos")
+                        print("Se superó el límite de intentos")
+                    time.sleep(delay)
             cursor.fast_executemany = False
             self.connection.commit()
         except Exception as e:

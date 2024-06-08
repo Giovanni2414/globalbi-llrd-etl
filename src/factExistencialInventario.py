@@ -2,16 +2,17 @@ import json
 import pandas as pd
 from datetime import datetime
 from utils.database_manager import DatabaseManager
+import logging
 
-def limpiar_saldos(manager: DatabaseManager):
+def limpiar_saldos(manager: DatabaseManager, logger: logging.Logger):
     print("Limpiando tabla FactExistenciaInventarios")
     try:
         query = 'TRUNCATE TABLE compras.FactExistenciaInventarios'
         manager.execute_query_no_results(query)
     except Exception as e:
-        print("Error metodo limpiar saltos: ", e)
+        logger.error(f"Error metodo limpiar saltos: {e}")
 
-def cargue_existencia_inventarios(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_existencia_inventarios(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando existencia inventarios")
     query = """
         SELECT [f400_id_cia] IdCompania ,
@@ -56,25 +57,32 @@ def cargue_existencia_inventarios(lloreda_manager: DatabaseManager, siesa_manage
                                                               'CantExistencia','CantExistencia2',
                                                               'ConsumoPromedio']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue existencia inventarios: ", e)
+        logger.error(f"Error metodo cargue existencia inventarios: {e}")
 
-if __name__ == "__main__":
+def ejecutar_fact_existencia():
+    logger = logging.getLogger(__name__)
+    logging.basicConfig(filename='errors.log', encoding='utf-8', level=logging.DEBUG, format='%(asctime)s %(levelname)s [%(filename)s:%(funcName)s] %(message)s')
+    logger.info('Iniciando cargue fact existencial inventario')
+
     with open('../config/database_credentials.json') as f:
         config_file = json.load(f)
-    database_name = 'lloreda'
+    database_name = 'destino'
     lloreda_manager = DatabaseManager(config_file, database_name, use_pooling=False)
     lloreda_manager.connect()
 
     with open('../config/database_credentials.json') as f:
         config_file = json.load(f)
-    database_name = 'siesa'
+    database_name = 'origen'
     siesa_manager = DatabaseManager(config_file, database_name, use_pooling=False)
     siesa_manager.connect()
 
     # Operaciones principales
-    limpiar_saldos(lloreda_manager)
-    cargue_existencia_inventarios(lloreda_manager, siesa_manager)
+    limpiar_saldos(lloreda_manager, logger)
+    cargue_existencia_inventarios(lloreda_manager, siesa_manager, logger)
     ############################
 
     lloreda_manager.disconnect()
     siesa_manager.disconnect()
+
+if __name__ == "__main__":
+    ejecutar_fact_existencia()

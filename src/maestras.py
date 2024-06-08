@@ -2,8 +2,9 @@ import json
 import pandas as pd
 from datetime import datetime
 from utils.database_manager import DatabaseManager
+import logging
 
-def cargue_companias(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_companias(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando companias")
     query = """
         SELECT [f010_id] IdCompania ,
@@ -48,9 +49,9 @@ def cargue_companias(lloreda_manager: DatabaseManager, siesa_manager: DatabaseMa
     try:
         lloreda_manager.execute_bulk_insert(query, df[['NewIdCompania', 'RazonSocial', 'Nit', 'IndEstado', 'MonedaLocal', 'PlanCuenta', 'FecCreacion', 'FecModificacion']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue companias: ", e)
+        logger.error("Error metodo cargue companias: ", e)
 
-def cargue_regionales(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_regionales(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando regionales")
     query = """
         SELECT f280_id CodRegion,
@@ -86,9 +87,9 @@ def cargue_regionales(lloreda_manager: DatabaseManager, siesa_manager: DatabaseM
     try:
         lloreda_manager.execute_bulk_insert(query, df[['CodRegion', 'Regional', 'IdCompania', 'FecCreacion', 'FecModificacion']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue regionales: ", e)
+        logger.error("Error metodo cargue regionales: ", e)
 
-def cargue_tipos_documento(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_tipos_documento(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando tipos documento")
     query = """
         SELECT convert(int,t.f021_id_cia) IdCompania,
@@ -133,9 +134,9 @@ def cargue_tipos_documento(lloreda_manager: DatabaseManager, siesa_manager: Data
     try:
         lloreda_manager.execute_bulk_insert(query, df[['IdCompania', 'TipoDocumentoCod', 'TipoDocumento', 'FamiliaCod', 'Familia', 'FecCreacion', 'FecModificacion']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue tipos documento: ", e)
+        logger.error("Error metodo cargue tipos documento: ", e)
 
-def cargue_centros_operacion(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_centros_operacion(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando centros operacion")
     
     query = """
@@ -188,9 +189,9 @@ def cargue_centros_operacion(lloreda_manager: DatabaseManager, siesa_manager: Da
     try:
         lloreda_manager.execute_bulk_insert(query, merged_df[['CentroOperacionCod', 'IdCompania', 'CodRegion', 'CentroOperacion', 'Activo', 'IdRegional', 'FechaCrea', 'FecModificacion']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue centros operacion: ", e)
+        logger.error("Error metodo cargue centros operacion: ", e)
 
-def cargue_centros_costo(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_centros_costo(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando centros costo")
     query = """
         SELECT DISTINCT cc.f284_rowid IdCentroCosto,
@@ -302,10 +303,9 @@ def cargue_centros_costo(lloreda_manager: DatabaseManager, siesa_manager: Databa
     try:
         lloreda_manager.execute_bulk_insert(query, df[['IdCentroCosto', 'IdCompania', 'CentroCostosCod', 'CentroCosto', 'CentroOperacionesCod', 'CentroOperaciones', 'GrupoCentroCostoCod', 'GrupoCentroCosto', 'IdCentroCostoMayor', 'Estado', 'FechaCreacion', 'CodNivel1', 'Nivel1', 'CodNivel2', 'Nivel2', 'CodNivel3', 'Nivel3', 'CodNivel4', 'Nivel4', 'CodNivel5', 'Nivel5', 'CodNivel6', 'Nivel6', 'CodNivel7', 'Nivel7', 'FecModificacion']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue centros costo: ", e)
+        logger.error("Error metodo cargue centros costo: ", e)
 
-# Pending to fix
-def cargue_contratos(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_contratos(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando contratos")
     query = """
         SELECT [c0550_id],
@@ -382,13 +382,14 @@ def cargue_contratos(lloreda_manager: DatabaseManager, siesa_manager: DatabaseMa
     df['cintcont'] = df['IndTerminoContrato'].astype('int16')
     df['cindes'] = df['IndEstado'].astype('int16')
     df['Crcar'] = df['RowidCargo'].astype('int16')
-    df['RowidConvencion'] = df['RowidConvencion'].fillna(0)
-    df['Crconv'] = df['RowidConvencion'].astype('int16')
+    df['Crconv'] = df['RowidConvencion'].astype('object')
     df['Cindct'] = df['IndContrTemp'].astype('int16')
     df['Cindts'] = df['IndTipoSalario'].astype('int16')
     df['CIndSexo'] = df['IndSexo'].astype('int16')
     df['IndPensionado'] = df['IndPensionado'].astype('int16')
     df['Retirado'] = df['Retirado'].astype('int16')
+    df = df.astype('object')
+    df = df.where(pd.notnull(df), None)
     query = f"""
         WITH CTE AS (
             SELECT ? AS nitEmpleado,
@@ -517,9 +518,9 @@ def cargue_contratos(lloreda_manager: DatabaseManager, siesa_manager: DatabaseMa
     try:
         lloreda_manager.execute_bulk_insert(query, df[['nitEmpleado', 'Nombres', 'IdCompania', 'IdCentroOperacion', 'IdCargo', 'RowidTurno', 'RowidGrupoEmpleados', 'RowidCCosto', 'RowidCentroTrabajo', 'TipoNomina', 'DescripcionTipoNomina', 'RowidTiempoBasico', 'FechaIngreso', 'FechaIngresoLey50', 'FechaRetiro', 'FechaContratoHasta', 'FechaPrimaHasta', 'FechaVacacionesHasta', 'FechaUltimoAumento', 'FechaUltVacaciones', 'FechaUltPension', 'FechaUltCesantias', 'Salario', 'SalarioAnterior', 'NroPersonasCargo', 'cindreg', 'cindauxt', 'cindpc', 'cindsub', 'cindsi', 'cindle7', 'cintcuenta', 'cindccont', 'cintcont', 'cindes', 'Crcar', 'Crconv', 'Cidcompf', 'Cindct', 'Cindts', 'FechaNacimiento', 'IndSexo', 'IndPensionado', 'Retirado']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue contratos: ", e)
+        logger.error("Error metodo cargue contratos: ", e)
 
-def cargue_plan_cuentas(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_plan_cuentas(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando plan cuentas")
     query = """
         WITH PL AS
@@ -618,6 +619,7 @@ def cargue_plan_cuentas(lloreda_manager: DatabaseManager, siesa_manager: Databas
         WHERE (f254_id_plan = P1.PL)
     """
     df = siesa_manager.execute_query_get_pandas(query)
+    print("Cantidad de registros: " + str(df[df.columns[0]].count()))
     df['FecCreacion'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     df['FecModificacion'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -673,9 +675,9 @@ def cargue_plan_cuentas(lloreda_manager: DatabaseManager, siesa_manager: Databas
     try:
         lloreda_manager.execute_bulk_insert(query, df[['IdCompania', 'PlanContable', 'CodMayor', 'AuxMayor', 'IdSubcuenta', 'Subcuenta', 'IdCuenta', 'Cuenta', 'IdClase', 'Clase', 'IdGrupo', 'Grupo', 'Naturaleza', 'Tipo', 'FecCreacion', 'FecModificacion']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue plan cuentas: ", e)
+        logger.error("Error metodo cargue plan cuentas: ", e)
 
-def cargue_auxiliar_contable(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_auxiliar_contable(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando auxiliares contables")
     query = """
         SELECT CONVERT(INT,f681_rowid_auxiliar) AS IdAuxiliar,
@@ -740,17 +742,17 @@ def cargue_auxiliar_contable(lloreda_manager: DatabaseManager, siesa_manager: Da
     try:
         lloreda_manager.execute_bulk_insert(query, merged_df[['IdAuxiliar', 'IdPlanCuenta', 'CodAuxiliar', 'Auxiliar', 'FecCreacion', 'FecModificacion', 'IdMoneda', 'IndCCosto', 'IdGrupo_CCosto']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue auxiliares contables: ", e)
+        logger.error("Error metodo cargue auxiliares contables: ", e)
 
-def limpiar_tabla_cargos(manager: DatabaseManager):
+def limpiar_tabla_cargos(manager: DatabaseManager, logger: logging.Logger):
     print("Limpiando tabla cargos")
     try:
         query = 'TRUNCATE TABLE siesa.tbCargos'
         manager.execute_query_no_results(query)
     except Exception as e:
-        print("Error metodo Limpiar Tabla Cargos: ", e)
+        logger.error("Error metodo Limpiar Tabla Cargos: ", e)
 
-def cargue_cargos(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_cargos(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando cargos")
     query = """
         SELECT c0763_rowid IdCargo,
@@ -775,17 +777,17 @@ def cargue_cargos(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManag
     try:
         lloreda_manager.execute_bulk_insert(query, df[['idcompania','IdCargo','CodCargo','descripcioncargo','FecCreacion','FecModificacion']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue  grupo causacion 1: ", e)
+        logger.error("Error metodo cargue cargos: ", e)
 
-def limpiar_tabla_cargos_centros(manager: DatabaseManager):
+def limpiar_tabla_cargos_centros(manager: DatabaseManager, logger: logging.Logger):
     print("Limpiando tabla cargos centros")
     try:
         query = 'TRUNCATE TABLE siesa.tbCargosCentros'
         manager.execute_query_no_results(query)
     except Exception as e:
-        print("Error metodo Limpiar Tabla Cargos Centros: ", e)
+        logger.error("Error metodo Limpiar Tabla Cargos Centros: ", e)
 
-def cargue_cargos_centros(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_cargos_centros(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando cargos centros")
     query = """
         SELECT wco.c0550_id_cia idcompania,
@@ -817,9 +819,9 @@ def cargue_cargos_centros(lloreda_manager: DatabaseManager, siesa_manager: Datab
                                                        'descripciontiponomina','idcargo','salario','FecCreacion',
                                                        'FecModificacion']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue  grupo causacion 1: ", e)
+        logger.error("Error metodo cargue  grupo causacion 1: ", e)
 
-def cargue_ciudades(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_ciudades(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando ciudades")
     query = """
         SELECT [f013_id_pais] IdPais ,
@@ -871,9 +873,9 @@ def cargue_ciudades(lloreda_manager: DatabaseManager, siesa_manager: DatabaseMan
     try:
         lloreda_manager.execute_bulk_insert(query, df[['IdPais', 'IdDepartamento', 'IdCiudad', 'Ciudad', 'Departamento', 'Pais', 'FecCreacion', 'FecModificacion']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue ciudades: ", e)
+        logger.error("Error metodo cargue ciudades: ", e)
 
-def cargue_clases_documento(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_clases_documento(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando clases documento")
     query = """
         SELECT C.f028_id IdClaseDocumento,
@@ -920,10 +922,9 @@ def cargue_clases_documento(lloreda_manager: DatabaseManager, siesa_manager: Dat
     try:
         lloreda_manager.execute_bulk_insert(query, df[['IdClaseDocumento', 'ClaseDocumento', 'Modulo', 'Formato', 'IdGrupoDocumento', 'GrupoDocumento', 'FecCreacion', 'FecModificacion']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue clases documento: ", e)
+        logger.error("Error metodo cargue clases documento: ", e)
 
-# Ask for this method, in the package the slowly changing dimension isn't complete
-def cargue_monedas(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_monedas(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando monedas")
     query = """
         SELECT [f017_id_cia] IdCompania ,
@@ -937,43 +938,33 @@ def cargue_monedas(lloreda_manager: DatabaseManager, siesa_manager: DatabaseMana
     df['FecModificacion'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     df['CidCompania'] = df['IdCompania'].astype('int32')
 
-    for index, row in df.iterrows():
-        query = f"""
-            WITH CTE AS (
-                SELECT {row['IdClaseDocumento']} AS IdClaseDocumento,
-                '{row['ClaseDocumento']}' AS ClaseDocumento,
-                {row['Modulo']} AS Modulo,
-                '{row['Formato']}' AS Formato,
-                {row['IdGrupoDocumento']} AS IdGrupoDocumento,
-                '{row['GrupoDocumento']}' AS GrupoDocumento,
-                '{row['FecCreacion']}' AS FecCreacion,
-                '{row['FecModificacion']}' AS FecModificacion
-            )
-            MERGE siesa.tbMonedas AS tgt
-            USING CTE AS src
-            ON tgt.IdClaseDocumento = src.IdClaseDocumento
-            WHEN NOT MATCHED THEN
-                INSERT (IdClaseDocumento, ClaseDocumento, Modulo, Formato,
-                IdGrupoDocumento, GrupoDocumento, FecCreacion, FecModificacion)
-                VALUES (src.IdClaseDocumento, src.ClaseDocumento, src.Modulo, src.Formato, 
-                src.IdGrupoDocumento, src.GrupoDocumento, src.FecCreacion, src.FecModificacion)
-            WHEN MATCHED THEN UPDATE SET
-                tgt.ClaseDocumento = src.ClaseDocumento,
-                tgt.Modulo = src.Modulo,
-                tgt.Formato = src.Formato,
-                tgt.IdGrupoDocumento = src.IdGrupoDocumento,
-                tgt.GrupoDocumento = src.GrupoDocumento,
-                tgt.FecModificacion = src.FecModificacion
-        """
-        try:
-            lloreda_manager.begin_transaction()
-            lloreda_manager.execute_query(query)
-            lloreda_manager.commit_transaction()
-        except Exception as e:
-            print("Error metodo cargue monedas: ", e)
-            lloreda_manager.rollback_transaction()
+    query = f"""
+        WITH CTE AS (
+            SELECT ? IdMoneda,
+                ? IdCompania,
+                ? Descripcion,
+                ? Simbolo,
+                ? FecCreacion,
+                ? FecModificacion
+        )
+        MERGE siesa.tbMonedas AS tgt
+        USING CTE AS src
+        ON tgt.IdCompania = src.IdCompania 
+            AND tgt.IdMoneda = src.IdMoneda
+        WHEN NOT MATCHED THEN
+            INSERT (IdMoneda, IdCompania, Descripcion, Simbolo, FecCreacion, FecModificacion)
+            VALUES (src.IdMoneda, src.IdCompania, src.Descripcion, src.Simbolo, src.FecCreacion, src.FecModificacion)
+        WHEN MATCHED THEN UPDATE SET
+            tgt.Descripcion = src.Descripcion,
+            tgt.Simbolo = src.Simbolo,
+            tgt.FecModificacion = src.FecModificacion;
+    """
+    try:
+        lloreda_manager.execute_bulk_insert(query, df[['IdMoneda', 'CidCompania', 'Descripcion', 'Simbolo', 'FecCreacion', 'FecModificacion']].values.tolist())
+    except Exception as e:
+        logger.error("Error metodo cargue monedas: ", e)
 
-def cargue_tasa_cambio_real(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_tasa_cambio_real(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando tasa cambio real")
     query = """
         SELECT [f018_id_cia] IdCompania ,
@@ -1015,10 +1006,9 @@ def cargue_tasa_cambio_real(lloreda_manager: DatabaseManager, siesa_manager: Dat
     try:
         lloreda_manager.execute_bulk_insert(query, df[['CidCompania', 'IdMoneda', 'FechaTasa', 'Tasa', 'FecCreacion', 'FecModificacion']].values.tolist())
     except Exception as e:
-        print("Error metodo cargue tasa cambio real: ", e)
+        logger.error("Error metodo cargue tasa cambio real: ", e)
 
-# Ask for the reason why the slowly changing dimension is empty and pending to fix
-def cargue_contratos_retirados(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager):
+def cargue_contratos_retirados(lloreda_manager: DatabaseManager, siesa_manager: DatabaseManager, logger: logging.Logger):
     print("Cargando contratos retirados")
     query = """
         SELECT [c0550_id],
@@ -1093,76 +1083,177 @@ def cargue_contratos_retirados(lloreda_manager: DatabaseManager, siesa_manager: 
     df['cintcont'] = df['IndTerminoContrato'].astype('int16')
     df['cindes'] = df['IndEstado'].astype('int16')
     df['Crcar'] = df['RowidCargo'].astype('int16')
-    df['Crconv'] = df['RowidConvencion'].astype('int16')
+    df['Crconv'] = df['RowidConvencion'].astype('object')
     df['Cindct'] = df['IndContrTemp'].astype('int16')
     df['Cindts'] = df['IndTipoSalario'].astype('int16')
     df['CIndSexo'] = df['IndSexo'].astype('int16')
     df['IndPensionado'] = df['IndPensionado'].astype('int16')
     df['Retirado'] = df['Retirado'].astype('int16')
+    df = df.astype('object')
+    df = df.where(pd.notnull(df), None)
+    query = f"""
+        WITH CTE AS (
+            SELECT ? AS nitEmpleado,
+            ? AS Nombres,
+            ? AS IdCompania,
+            ? AS IdCentroOperacion,
+            ? AS IdCargo,
+            ? AS RowidTurno,
+            ? AS RowidGrupoEmpleados,
+            ? AS RowidCCosto,
+            ? AS RowidCentroTrabajo,
+            ? AS TipoNomina,
+            ? AS DescripcionTipoNomina,
+            ? AS RowidTiempoBasico,
+            ? AS FechaIngreso,
+            ? AS FechaIngresoLey50,
+            ? AS FechaRetiro,
+            ? AS FechaContratoHasta,
+            ? AS FechaPrimaHasta,
+            ? AS FechaVacacionesHasta,
+            ? AS FechaUltimoAumento,
+            ? AS FechaUltVacaciones,
+            ? AS FechaUltPension,
+            ? AS FechaUltCesantias,
+            ? AS Salario,
+            ? AS SalarioAnterior,
+            ? AS NroPersonasCargo,
+            ? AS IndRegimenLaboral,
+            ? AS IndAuxilioTransporte,
+            ? AS IndPactoColectivo,
+            ? AS IndSubsidio,
+            ? AS IndSalarioIntegral,
+            ? AS IndLey789,
+            ? AS IndtipoCuenta,
+            ? AS IndClaseContrato,
+            ? AS IndTerminoContrato,
+            ? AS IndEstado,
+            ? AS RowidCargo,
+            ? AS RowidConvencion,
+            ? AS IdCompensacionFlex,
+            ? AS IndContrTemp,
+            ? AS IndTipoSalario,
+            ? AS FechaNacimiento,
+            ? AS IndSexo,
+            ? AS IndPensionado,
+            ? AS Retirado
+        )
+        MERGE siesa.tbContratos AS tgt
+        USING CTE AS src
+        ON tgt.nitEmpleado = src.nitEmpleado 
+            AND tgt.IdCompania = src.IdCompania
+        WHEN NOT MATCHED THEN
+            INSERT (nitEmpleado, Nombres, IdCompania, IdCentroOperacion, IdCargo, RowidTurno, RowidGrupoEmpleados,
+            RowidCCosto, RowidCentroTrabajo, TipoNomina, DescripcionTipoNomina, RowidTiempoBasico, FechaIngreso,
+            FechaIngresoLey50, FechaRetiro, FechaContratoHasta, FechaPrimaHasta, FechaVacacionesHasta, FechaUltimoAumento,
+            FechaUltVacaciones, FechaUltPension, FechaUltCesantias, Salario, SalarioAnterior, NroPersonasCargo, 
+            IndRegimenLaboral, IndAuxilioTransporte, IndPactoColectivo, IndSubsidio, IndSalarioIntegral, IndLey789,
+            IndtipoCuenta, IndClaseContrato, IndTerminoContrato, IndEstado, RowidCargo, RowidConvencion, IdCompensacionFlex, IndContrTemp,
+            IndTipoSalario, FechaNacimiento, IndSexo, IndPensionado, Retirado)
+            VALUES (src.nitEmpleado, src.Nombres, src.IdCompania, src.IdCentroOperacion, src.IdCargo,
+                src.RowidTurno, src.RowidGrupoEmpleados, src.RowidCCosto, src.RowidCentroTrabajo,
+                src.TipoNomina, src.DescripcionTipoNomina, src.RowidTiempoBasico, src.FechaIngreso,
+                src.FechaIngresoLey50, src.FechaRetiro, src.FechaContratoHasta, src.FechaPrimaHasta,
+                src.FechaVacacionesHasta, src.FechaUltimoAumento, src.FechaUltVacaciones, src.FechaUltPension,
+                src.FechaUltCesantias, src.Salario, src.SalarioAnterior, src.NroPersonasCargo,
+                src.IndRegimenLaboral, src.IndAuxilioTransporte, src.IndPactoColectivo, src.IndSubsidio,
+                src.IndSalarioIntegral, src.IndLey789, src.IndtipoCuenta, src.IndClaseContrato, src.IndTerminoContrato,
+                src.IndEstado, src.RowidCargo, src.RowidConvencion, src.IdCompensacionFlex, src.IndContrTemp,
+                src.IndTipoSalario, src.FechaNacimiento, src.IndSexo, src.IndPensionado, src.Retirado)
+        WHEN MATCHED THEN UPDATE SET
+            tgt.Nombres = src.Nombres,
+            tgt.IdCentroOperacion = src.IdCentroOperacion,
+            tgt.IdCargo = src.IdCargo,
+            tgt.RowidTurno = src.RowidTurno,
+            tgt.RowidGrupoEmpleados = src.RowidGrupoEmpleados,
+            tgt.RowidCCosto = src.RowidCCosto,
+            tgt.RowidCentroTrabajo = src.RowidCentroTrabajo,
+            tgt.TipoNomina = src.TipoNomina,
+            tgt.DescripcionTipoNomina = src.DescripcionTipoNomina,
+            tgt.RowidTiempoBasico = src.RowidTiempoBasico,
+            tgt.FechaIngreso = src.FechaIngreso,
+            tgt.FechaIngresoLey50 = src.FechaIngresoLey50,
+            tgt.FechaRetiro = src.FechaRetiro,
+            tgt.FechaContratoHasta = src.FechaContratoHasta,
+            tgt.FechaPrimaHasta = src.FechaPrimaHasta,
+            tgt.FechaVacacionesHasta = src.FechaVacacionesHasta,
+            tgt.FechaUltimoAumento = src.FechaUltimoAumento,
+            tgt.FechaUltVacaciones = src.FechaUltVacaciones,
+            tgt.FechaUltPension = src.FechaUltPension,
+            tgt.FechaUltCesantias = src.FechaUltCesantias,
+            tgt.Salario = src.Salario,
+            tgt.SalarioAnterior = src.SalarioAnterior,
+            tgt.NroPersonasCargo = src.NroPersonasCargo,
+            tgt.IndRegimenLaboral = src.IndRegimenLaboral,
+            tgt.IndAuxilioTransporte = src.IndAuxilioTransporte,
+            tgt.IndPactoColectivo = src.IndPactoColectivo,
+            tgt.IndSubsidio = src.IndSubsidio,
+            tgt.IndSalarioIntegral = src.IndSalarioIntegral,
+            tgt.IndLey789 = src.IndLey789,
+            tgt.IndtipoCuenta = src.IndtipoCuenta,
+            tgt.IndClaseContrato = src.IndClaseContrato,
+            tgt.IndTerminoContrato = src.IndTerminoContrato,
+            tgt.IndEstado = src.IndEstado,
+            tgt.RowidCargo = src.RowidCargo,
+            tgt.RowidConvencion = src.RowidConvencion,
+            tgt.IdCompensacionFlex = src.IdCompensacionFlex,
+            tgt.IndContrTemp = src.IndContrTemp,
+            tgt.IndTipoSalario = src.IndTipoSalario,
+            tgt.FechaNacimiento = src.FechaNacimiento,
+            tgt.IndSexo = src.IndSexo,
+            tgt.IndPensionado = src.IndPensionado,
+            tgt.Retirado = src.Retirado;
+    """
+    try:
+        lloreda_manager.execute_bulk_insert(query, df[['nitEmpleado','Nombres','IdCompania','IdCentroOperacion','IdCargo','RowidTurno',
+                                                       'RowidGrupoEmpleados','RowidCCosto','RowidCentroTrabajo','TipoNomina','DescripcionTipoNomina',
+                                                       'RowidTiempoBasico','FechaIngreso','FechaIngresoLey50','FechaRetiro','FechaContratoHasta',
+                                                       'FechaPrimaHasta','FechaVacacionesHasta','FechaUltimoAumento','FechaUltVacaciones',
+                                                       'FechaUltPension','FechaUltCesantias','Salario','SalarioAnterior','NroPersonasCargo',
+                                                       'cindreg','cindauxt','cindpc','cindsub','cindsi','cindle7','cintcuenta','cindccont',
+                                                       'cintcont','cindes','Crcar','Crconv','Cidcompf','Cindct','Cindts','FechaNacimiento',
+                                                       'IndSexo','IndPensionado','Retirado']].values.tolist())
+    except Exception as e:
+        logger.error("Error metodo cargue contratos retirados: ", e)
 
-    for index, row in df.iterrows():
-        query = f"""
-            WITH CTE AS (
-                SELECT {row['CidCompania']} AS IdCompania,
-                '{row['IdMoneda']}' AS IdMoneda,
-                '{row['FechaTasa']}' AS Fecha,
-                {row['Tasa']} AS tasa,
-                '{row['FecCreacion']}' AS FecCreacion,
-                '{row['FecModificacion']}' AS FecModificacion
-            )
-            MERGE siesa.tbTasaCambioReal AS tgt
-            USING CTE AS src
-            ON tgt.IdCompania = src.IdCompania
-                AND tgt.IdMoneda = src.IdMoneda
-            WHEN NOT MATCHED THEN
-                INSERT (IdCompania, IdMoneda, Fecha, tasa,
-                FecCreacion, FecModificacion)
-                VALUES (src.IdCompania, src.IdMoneda, src.Fecha, src.tasa, 
-                src.FecCreacion, src.FecModificacion)
-            WHEN MATCHED THEN UPDATE SET
-                tgt.IdCompania = src.IdCompania,
-                tgt.IdMoneda = src.IdMoneda,
-                tgt.Fecha = src.Fecha,
-                tgt.tasa = src.tasa,
-                tgt.FecModificacion = src.FecModificacion
-        """
-        try:
-            lloreda_manager.begin_transaction()
-            lloreda_manager.execute_query(query)
-            lloreda_manager.commit_transaction()
-        except Exception as e:
-            print("Error metodo cargue tasa cambio real: ", e)
-            lloreda_manager.rollback_transaction()
-
-if __name__ == "__main__":
+def ejecutar_maestras():
+    logger = logging.getLogger(__name__)
+    logging.basicConfig(filename='errors.log', encoding='utf-8', level=logging.DEBUG, format='%(asctime)s %(levelname)s [%(filename)s:%(funcName)s] %(message)s')
+    logger.info('Iniciando cargue maestras')
     with open('../config/database_credentials.json') as f:
         config_file = json.load(f)
-    database_name = 'lloreda'
+    database_name = 'destino'
     lloreda_manager = DatabaseManager(config_file, database_name, use_pooling=False)
     lloreda_manager.connect()
 
     with open('../config/database_credentials.json') as f:
         config_file = json.load(f)
-    database_name = 'siesa'
+    database_name = 'origen'
     siesa_manager = DatabaseManager(config_file, database_name, use_pooling=False)
     siesa_manager.connect()
 
     # Operaciones principales
-    #cargue_companias(lloreda_manager, siesa_manager)
-    #cargue_regionales(lloreda_manager, siesa_manager)
-    #cargue_tipos_documento(lloreda_manager, siesa_manager)
-    #cargue_centros_operacion(lloreda_manager, siesa_manager)
-    #cargue_centros_costo(lloreda_manager, siesa_manager)
-    #cargue_plan_cuentas(lloreda_manager, siesa_manager)
-    #cargue_auxiliar_contable(lloreda_manager, siesa_manager)
-    #limpiar_tabla_cargos(lloreda_manager)
-    #cargue_cargos(lloreda_manager, siesa_manager)
-    #limpiar_tabla_cargos_centros(lloreda_manager)
-    #cargue_cargos_centros(lloreda_manager, siesa_manager)
-    #cargue_ciudades(lloreda_manager, siesa_manager)
-    #cargue_clases_documento(lloreda_manager, siesa_manager)
-    #cargue_tasa_cambio_real(lloreda_manager, siesa_manager)
+    cargue_companias(lloreda_manager, siesa_manager, logger)
+    cargue_regionales(lloreda_manager, siesa_manager, logger)
+    cargue_tipos_documento(lloreda_manager, siesa_manager, logger)
+    cargue_centros_operacion(lloreda_manager, siesa_manager, logger)
+    cargue_centros_costo(lloreda_manager, siesa_manager, logger)
+    cargue_contratos(lloreda_manager, siesa_manager, logger)
+    cargue_contratos_retirados(lloreda_manager, siesa_manager, logger)
+    cargue_plan_cuentas(lloreda_manager, siesa_manager, logger)
+    cargue_auxiliar_contable(lloreda_manager, siesa_manager, logger)
+    limpiar_tabla_cargos(lloreda_manager, logger)
+    cargue_cargos(lloreda_manager, siesa_manager, logger)
+    limpiar_tabla_cargos_centros(lloreda_manager, logger)
+    cargue_cargos_centros(lloreda_manager, siesa_manager, logger)
+    cargue_ciudades(lloreda_manager, siesa_manager, logger)
+    cargue_clases_documento(lloreda_manager, siesa_manager, logger)
+    cargue_tasa_cambio_real(lloreda_manager, siesa_manager, logger)
+    cargue_monedas(lloreda_manager, siesa_manager, logger)
     ############################
 
     lloreda_manager.disconnect()
     siesa_manager.disconnect()
+
+if __name__ == "__main__":
+    ejecutar_maestras()
